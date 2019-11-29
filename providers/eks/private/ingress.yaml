@@ -1,0 +1,7 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: monitoring-ingress
+  namespace: zcp-system
+  annotations:
+    kubernetes.io/ingress.class: "private-nginx"

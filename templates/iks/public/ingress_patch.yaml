@@ -1,0 +1,23 @@
+- op: replace
+  path: /spec/rules/0/host
+  value: tpl-monitoring.cloudzcp.io
+
+- op: replace
+  path: /spec/rules/1/host
+  value: tpl-prometheus.cloudzcp.io
+
+- op: replace
+  path: /spec/rules/2/host
+  value: tpl-alertmanager.cloudzcp.io
+
+- op: replace
+  path: /spec/tls/0/hosts/0
+  value: tpl-monitoring.cloudzcp.io
+
+- op: replace
+  path: /spec/tls/0/hosts/1
+  value: tpl-prometheus.cloudzcp.io
+
+- op: replace
+  path: /spec/tls/0/hosts/2
+  value: tpl-alertmanager.cloudzcp.io

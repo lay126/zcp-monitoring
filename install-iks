@@ -1,0 +1,72 @@
+#!/bin/bash
+# Cloud Z CP Public monitoring component installation script
+# I will change this script to golang code
+
+usage() {
+  cat <<"EOF"
+USAGE:
+  install-iks                   : install private access type
+  install-iks --access=public   : private is true or false
+
+  install -h,--help             : show this message
+EOF
+}
+
+install() {
+  local provider="iks"
+  local access="${1}"
+
+  if [[ "${access}" -ne "private" || "${access}" -ne "public" ]]; then
+    echo "Access can private or public"
+    exit 1
+  fi
+
+  # Set variables
+  current_context=$(kubectl config current-context)
+  cluster_name=${current_context%%/*}
+  CLUSTER_NAME=$(echo $cluster_name | tr '[:lower:]' '[:upper:]')
+  host_prefix=$(if [ ${cluster_name##*-} = "dev" ]; then echo ${cluster_name#*-}; else remainder=${cluster_name#*-}; echo ${remainder%-*}; fi)
+  alb_id=$(kubectl get deployment -n kube-system --no-headers=true -o=custom-columns=NAME:.metadata.name | grep "private-.*-alb")
+
+  # Create ectd secret
+  kubectl patch secret calico-etcd-secrets -n kube-system -p='{"metadata": {"name": "etcd-secrets", "namespace": "zcp-system"}}' --dry-run -o yaml | kubectl create -f -
+
+  # Clean kustomize resources for cluster
+  rm -rf .kustomize/${cluster_name}
+  # Create kustomize overlay resource for cluster
+  cp -r templates/${provider}/${access} .kustomize/${cluster_name}
+
+  # Update ingress and config files
+  sed -i '' 's/CLOUDZCP-TEMPLATE/'${CLUSTER_NAME}'/g' .kustomize/${cluster_name}/prometheus/config/prometheus.yml
+  sed -i '' 's/template/'${host_prefix}'/g' .kustomize/${cluster_name}/grafana/config/grafana.ini
+  sed -i '' 's/template/'${host_prefix}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
+  sed -i '' 's/alb_id/'${alb_id}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
+
+  # Apply kustomize resources
+  kubectl get -k .kustomize/${cluster_name}
+}
+
+main() {
+  if [[ "$#" -eq 0 ]]; then
+      install "private"
+  elif [[ "$#" -eq 1 ]]; then
+    echo "1"
+    echo "${1}"
+    if [[ "${1}" =~ --access=(.+) ]]; then
+      echo ${BASH_REMATCH[1]}
+      if [[ -z "${BASH_REMATCH[1]}" ]]; then
+        install "private"
+      else
+        install "${BASH_REMATCH[1]}"
+      fi
+    elif [[ "${1}" == "-h" || "${1}" == "--help" ]]; then
+      usage
+      exit 1
+    fi
+  else
+    usage
+    exit 1
+  fi
+}
+
+main "$@"
