@@ -26,7 +26,9 @@ install() {
   cluster_name=${current_context%%/*}
   CLUSTER_NAME=$(echo $cluster_name | tr '[:lower:]' '[:upper:]')
   host_prefix=$(if [ ${cluster_name##*-} = "dev" ]; then echo ${cluster_name#*-}; else remainder=${cluster_name#*-}; echo ${remainder%-*}; fi)
-  alb_id=$(kubectl get deployment -n kube-system --no-headers=true -o=custom-columns=NAME:.metadata.name | grep "private-.*-alb")
+  if [[ "${access}" = "private" ]]; then
+    alb_id=$(kubectl get deployment -n kube-system --no-headers=true -o=custom-columns=NAME:.metadata.name | grep "private-.*-alb")
+  fi
 
   # Create ectd secret
   kubectl patch secret calico-etcd-secrets -n kube-system -p='{"metadata": {"name": "etcd-secrets", "namespace": "zcp-system"}}' --dry-run -o yaml | kubectl create -f -
@@ -40,10 +42,12 @@ install() {
   sed -i '' 's/CLOUDZCP-TEMPLATE/'${CLUSTER_NAME}'/g' .kustomize/${cluster_name}/prometheus/config/prometheus.yml
   sed -i '' 's/template/'${host_prefix}'/g' .kustomize/${cluster_name}/grafana/config/grafana.ini
   sed -i '' 's/template/'${host_prefix}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
-  sed -i '' 's/alb_id/'${alb_id}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
+  if [[ "${access}" = "private" ]]; then
+    sed -i '' 's/alb_id/'${alb_id}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
+  fi
 
   # Apply kustomize resources
-  kubectl get -k .kustomize/${cluster_name}
+  kubectl apply -k .kustomize/${cluster_name}
 }
 
 main() {

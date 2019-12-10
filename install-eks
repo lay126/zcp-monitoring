@@ -39,7 +39,7 @@ install() {
   sed -i '' 's/template/'${host_prefix}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
 
   # Apply kustomize resources
-  kubectl get -k .kustomize/${cluster_name}
+  kubectl apply -k .kustomize/${cluster_name}
 }
 
 main() {
