@@ -21,3 +21,7 @@
 - op: replace
   path: /spec/tls/0/hosts/2
   value: template-alertmanager.cloudzcp.io
+
+- op: replace
+  path: /metadata/annotations/kubernetes.io~1ingress.class
+  value: ingress_class

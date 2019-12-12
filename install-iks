@@ -27,7 +27,9 @@ install() {
   CLUSTER_NAME=$(echo $cluster_name | tr '[:lower:]' '[:upper:]')
   host_prefix=$(if [ ${cluster_name##*-} = "dev" ]; then echo ${cluster_name#*-}; else remainder=${cluster_name#*-}; echo ${remainder%-*}; fi)
   if [[ "${access}" = "private" ]]; then
-    alb_id=$(kubectl get deployment -n kube-system --no-headers=true -o=custom-columns=NAME:.metadata.name | grep "private-.*-alb")
+    alb_id=$(kubectl get deployment -n kube-system --no-headers=true -o=custom-columns=NAME:.metadata.name | grep "private-.*-alb1")
+  elif [[ "${access}" = "public" ]]; then
+    alb_id=$(kubectl get deployment -n kube-system --no-headers=true -o=custom-columns=NAME:.metadata.name | grep "public-.*-alb1")
   fi
 
   # Create ectd secret
@@ -36,26 +38,30 @@ install() {
   # Clean kustomize resources for cluster
   rm -rf .kustomize/${cluster_name}
   # Create kustomize overlay resource for cluster
-  cp -r templates/${provider}/${access} .kustomize/${cluster_name}
+  cp -r templates/${provider} .kustomize/${cluster_name}
 
   # Update ingress and config files
   sed -i '' 's/CLOUDZCP-TEMPLATE/'${CLUSTER_NAME}'/g' .kustomize/${cluster_name}/prometheus/config/prometheus.yml
   sed -i '' 's/template/'${host_prefix}'/g' .kustomize/${cluster_name}/grafana/config/grafana.ini
   sed -i '' 's/template/'${host_prefix}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
-  if [[ "${access}" = "private" ]]; then
-    sed -i '' 's/alb_id/'${alb_id}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
-  fi
+  sed -i '' 's/alb_id/'${alb_id}'/g' .kustomize/${cluster_name}/ingress_patch.yaml
 
   # Apply kustomize resources
-  kubectl apply -k .kustomize/${cluster_name}
+  kubectl kustomize .kustomize/${cluster_name}
+  while true; do
+      read -p "## Check this resources before applying. Right? (Input y or n) " yn
+      case $yn in
+          [Yy]* ) echo "It will be applying this resources to your cluster" && break;;
+          [Nn]* ) echo "Exit this program" && exit;;
+      esac
+  done
+#  kubectl apply -k .kustomize/${cluster_name}
 }
 
 main() {
   if [[ "$#" -eq 0 ]]; then
-      install "private"
+    install "private"
   elif [[ "$#" -eq 1 ]]; then
-    echo "1"
-    echo "${1}"
     if [[ "${1}" =~ --access=(.+) ]]; then
       echo ${BASH_REMATCH[1]}
       if [[ -z "${BASH_REMATCH[1]}" ]]; then
