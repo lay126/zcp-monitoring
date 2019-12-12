@@ -55,7 +55,7 @@ install() {
           [Nn]* ) echo "Exit this program" && exit;;
       esac
   done
-#  kubectl apply -k .kustomize/${cluster_name}
+  kubectl apply -k .kustomize/${cluster_name}
 }
 
 main() {
