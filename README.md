@@ -47,25 +47,25 @@ $ git clone https://github.com/cnpst/zcp-monitoring.git
 ### for IKS
 
 ```
-$ ./install-iks
+$ ./install --provider iks
 ```
 
 만약 public 접근이 필요하다면
 
 ```
-$ ./install-iks --access=public
+$ ./install --provider iks --access public
 ```
 
 ### for EKS
 
 ```
-$ ./install-eks
+$ ./install --provider eks
 ```
 
 만약 public 접근이 필요하다면
 
 ```
-$ ./install-eks --access=public
+$ ./install --provider eks --access public
 ```
 
 ### (Optional) Install elasticsearch exporter
