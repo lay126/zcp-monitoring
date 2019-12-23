@@ -4,4 +4,4 @@ metadata:
   name: prometheus-data
   namespace: zcp-system
 spec:
-  storageClassName: file-standard-retain
+  storageClassName: managed-standard-retain

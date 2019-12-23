@@ -4,4 +4,4 @@ metadata:
   name: grafana-data
   namespace: zcp-system
 spec:
-  storageClassName: file-standard-retain
+  storageClassName: managed-standard-retain
